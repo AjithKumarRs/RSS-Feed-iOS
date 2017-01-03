@@ -8,8 +8,8 @@
 
 import UIKit
 
-class FeedParser: NSObject, NSXMLParserDelegate {
-    var parser = NSXMLParser()
+class FeedParser: NSObject, XMLParserDelegate {
+    var parser = XMLParser()
     
     var items:Array<FeedItem>?
     var currentItem:FeedItem?
@@ -18,37 +18,37 @@ class FeedParser: NSObject, NSXMLParserDelegate {
     var currentElement:String?
     var currentElementData:String?
     
-    var data:NSData!
+    var data:Data!
     
     var onSuccess: (() -> Void)?
     var onFailure: ((String) -> Void)?
     
-    init(data: NSData) {
+    init(data: Data) {
         super.init()
         self.data = data
     }
     
-    func parse(onSuccess: (() -> Void), onFailure:((reason: String) -> Void)) {
+    func parse(_ onSuccess: @escaping (() -> Void), onFailure:@escaping ((_ reason: String) -> Void)) {
         self.onSuccess = onSuccess
         self.onFailure = onFailure
         
         items = []
         currentItem = FeedItem()
 
-        parser = NSXMLParser(data: self.data)
+        parser = XMLParser(data: self.data)
         parser.delegate = self
         parser.parse()
     }
     
     //MARK: NSXMLParserDelegate
-    func parser(parser: NSXMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String]) {
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String]) {
         
         if elementName == "channel" || elementName == "item" { // We only care about items or channels here
             self.currentElement = elementName
         }
     }
 
-    func parser(parser: NSXMLParser, foundCharacters string: String) {
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
         if self.currentElementData == nil {
             self.currentElementData = ""
         }
@@ -56,7 +56,7 @@ class FeedParser: NSObject, NSXMLParserDelegate {
         self.currentElementData? += string
     }
 
-    func parser(parser: NSXMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         if elementName == "item" { // Item done
             currentItem?.sanitize()
             self.items?.append(currentItem!)
@@ -89,11 +89,11 @@ class FeedParser: NSObject, NSXMLParserDelegate {
         self.currentElementData = ""
     }
     
-    func parser(parser: NSXMLParser, parseErrorOccurred parseError: NSError) {
+    func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
         self.onFailure?("Error parsing XML")
     }
     
-    func parserDidEndDocument(_parser: NSXMLParser) {
+    func parserDidEndDocument(_ _parser: XMLParser) {
         self.onSuccess?()
     }
 

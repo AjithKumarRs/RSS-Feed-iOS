@@ -18,8 +18,8 @@ class OptionsViewController: UIViewController {
         super.viewDidLoad()
         
         // Edit and Add buttons
-        let addButton = UIBarButtonItem(barButtonSystemItem: .Add, target: self, action: "addFeedButtonClicked:")
-        editButton = UIBarButtonItem(title: "Edit", style: .Plain, target: self, action: "editButtonClicked:")
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(OptionsViewController.addFeedButtonClicked(_:)))
+        editButton = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(OptionsViewController.editButtonClicked(_:)))
         let buttonAr = [editButton!, addButton]
         
         self.navigationItem.setRightBarButtonItems(buttonAr, animated: true)
@@ -27,21 +27,21 @@ class OptionsViewController: UIViewController {
     
     
     //MARK: Interface actions
-    func addFeedButtonClicked(sender: AnyObject) {
-        if feedTableView.editing { // Stop editing and do button title
+    func addFeedButtonClicked(_ sender: AnyObject) {
+        if feedTableView.isEditing { // Stop editing and do button title
             editButtonClicked(self)
         }
 
         // Show alert with URL box (Name comes from feed itself when downloaded!)
-        let alert = UIAlertController(title: "Enter feed URL", message: "", preferredStyle: .Alert)
+        let alert = UIAlertController(title: "Enter feed URL", message: "", preferredStyle: .alert)
         
-        alert.addTextFieldWithConfigurationHandler({ (textField) -> Void in
+        alert.addTextField(configurationHandler: { (textField) -> Void in
             textField.placeholder = "Feed URL"
         })
-        let cancelAction = UIAlertAction(title: "Cancel", style: .Cancel) { (action) -> Void in }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (action) -> Void in }
         
         // Add
-        let addAction = UIAlertAction(title: "Add", style: .Default) { (action) -> Void in
+        let addAction = UIAlertAction(title: "Add", style: .default) { (action) -> Void in
             if let url = alert.textFields![0].text {
                 self.testAndSave(url)
             }
@@ -52,33 +52,33 @@ class OptionsViewController: UIViewController {
         
         alert.addAction(addAction)
         alert.addAction(cancelAction)
-        presentViewController(alert, animated: true) { () -> Void in }
+        present(alert, animated: true) { () -> Void in }
     }
     
     // Sets tableview in editing mode and changes button title
-    func editButtonClicked(sender: AnyObject) {
-        feedTableView.setEditing(!feedTableView.editing, animated: true)
-        editButton?.title = feedTableView.editing ? "Done" : "Edit"
+    func editButtonClicked(_ sender: AnyObject) {
+        feedTableView.setEditing(!feedTableView.isEditing, animated: true)
+        editButton?.title = feedTableView.isEditing ? "Done" : "Edit"
     }
     
     
     //MARK: Add
     // Show error and try again
-    func inputError(error: String) {
-        let alert = UIAlertController(title: "Error", message: error, preferredStyle: .Alert)
-        let okAction = UIAlertAction(title: "Ok", style: .Default) { (action) -> Void in
+    func inputError(_ error: String) {
+        let alert = UIAlertController(title: "Error", message: error, preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "Ok", style: .default) { (action) -> Void in
             self.addFeedButtonClicked(self)
         }
         
         alert.addAction(okAction)
-        presentViewController(alert, animated: true, completion: { () -> Void in })
+        present(alert, animated: true, completion: { () -> Void in })
     }
     
     // Feed added, success!
     func feedAdded() {
-        let alert = UIAlertController(title: "Success", message: "Feed was added successfully!", preferredStyle: .Alert)
-        let okAction = UIAlertAction(title: "Ok", style: .Default) { (action) -> Void in }
-        let enableAction = UIAlertAction(title: "Enable feed", style: .Default) { (action) -> Void in
+        let alert = UIAlertController(title: "Success", message: "Feed was added successfully!", preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "Ok", style: .default) { (action) -> Void in }
+        let enableAction = UIAlertAction(title: "Enable feed", style: .default) { (action) -> Void in
             let newFeed = FeedManager.sharedManger.feeds.last
             newFeed?.isFeedOn = true
             
@@ -88,14 +88,14 @@ class OptionsViewController: UIViewController {
         
         alert.addAction(okAction)
         alert.addAction(enableAction)
-        presentViewController(alert, animated: true) { () -> Void in }
+        present(alert, animated: true) { () -> Void in }
     }
     
     // Tests URL and saves if valid, if not, present error
-    func testAndSave(URLString: String) {
-        self.loadingView.hidden = false
+    func testAndSave(_ URLString: String) {
+        self.loadingView.isHidden = false
         
-        let testingFeed = Feed(title: "testingFeed", URL: NSURL(string: URLString)!, isOn: false, isStandard: false)
+        let testingFeed = Feed(title: "testingFeed", URL: URL(string: URLString)!, isOn: false, isStandard: false)
         testingFeed.getFeedItems({ (items) -> Void in
                 print("Hentet fra feed: \(testingFeed.feedTitle)")
             }) { (reason) -> Void in
@@ -104,31 +104,31 @@ class OptionsViewController: UIViewController {
     }
     
     //MARK: UITableView delegate & datasource
-    func tableView(_tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    func tableView(_ _tableView: UITableView, didSelectRowAtIndexPath indexPath: IndexPath) {
         let feed = FeedManager.sharedManger.feeds[indexPath.row]
         feed.isFeedOn = !feed.isFeedOn
         
         if feed.isFeedOn! {
-            _tableView.cellForRowAtIndexPath(indexPath)?.accessoryType = .Checkmark
+            _tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
         }
         else {
-            _tableView.cellForRowAtIndexPath(indexPath)?.accessoryType = .None
+            _tableView.cellForRow(at: indexPath)?.accessoryType = .none
         }
         
-        _tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        _tableView.deselectRow(at: indexPath, animated: true)
         FeedManager.sharedManger.saveAll()
     }
     
-    func tableView(_tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = _tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
+    func tableView(_ _tableView: UITableView, cellForRowAtIndexPath indexPath: IndexPath) -> UITableViewCell {
+        let cell = _tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         
         let feed = FeedManager.sharedManger.feeds[indexPath.row]
         
         if feed.isFeedOn! {
-            cell.accessoryType = .Checkmark
+            cell.accessoryType = .checkmark
         }
         else {
-            cell.accessoryType = .None
+            cell.accessoryType = .none
         }
         
         cell.textLabel?.text = feed.feedTitle
@@ -136,34 +136,34 @@ class OptionsViewController: UIViewController {
         return cell
     }
     
-    func numberOfSectionsInTableView(_tableView: UITableView) -> Int {
+    func numberOfSectionsInTableView(_ _tableView: UITableView) -> Int {
         return 1
     }
     
-    func tableView(_tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ _tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return FeedManager.sharedManger.feeds.count
     }
     
-    func tableView(_tableView: UITableView, editingStyleForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCellEditingStyle {
+    func tableView(_ _tableView: UITableView, editingStyleForRowAtIndexPath indexPath: IndexPath) -> UITableViewCellEditingStyle {
         let feed = FeedManager.sharedManger.feeds[indexPath.row]
         if feed.isFeedStandard! {
-            return .None
+            return .none
         }
         
-        return .Delete
+        return .delete
     }
     
-    func tableView(_tableView: UITableView, titleForDeleteConfirmationButtonForRowAtIndexPath indexPath: NSIndexPath) -> String? {
+    func tableView(_ _tableView: UITableView, titleForDeleteConfirmationButtonForRowAtIndexPath indexPath: IndexPath) -> String? {
         return "Remove"
     }
     
-    func tableView(_tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
+    func tableView(_ _tableView: UITableView, canEditRowAtIndexPath indexPath: IndexPath) -> Bool {
         let feed = FeedManager.sharedManger.feeds[indexPath.row]
         return !feed.isFeedStandard
     }
     
-    func tableView(_tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
-        if editingStyle == .Delete {
+    func tableView(_ _tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: IndexPath) {
+        if editingStyle == .delete {
             let feed = FeedManager.sharedManger.feeds[indexPath.row]
             FeedManager.sharedManger.removeFeed(feed)
             

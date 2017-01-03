@@ -14,9 +14,9 @@ class FeedManager {
     
     init() {
         // Load defaults
-        let defs = NSUserDefaults.standardUserDefaults()
+        let defs = UserDefaults.standard
         
-        if let defaults:Array<NSData> = defs.valueForKey("Default") as? Array<NSData> {
+        if let defaults:Array<Data> = defs.value(forKey: "Default") as? Array<Data> {
             loadDefaults(defaults)
         }
         else { // Defaults does not exist. Create and save! (Most likely first run)
@@ -31,11 +31,11 @@ class FeedManager {
     
     // Loads the users own feeds
     func loadUserFeeds() {
-        let defs = NSUserDefaults.standardUserDefaults()
-        if let userFeeds:Array<NSData> = defs.valueForKey("User") as? Array<NSData> {
+        let defs = UserDefaults.standard
+        if let userFeeds:Array<Data> = defs.value(forKey: "User") as? Array<Data> {
             for data in userFeeds {
-                let unarc = NSKeyedUnarchiver(forReadingWithData: data)
-                let feed = unarc.decodeObjectForKey("root") as! Feed
+                let unarc = NSKeyedUnarchiver(forReadingWith: data)
+                let feed = unarc.decodeObject(forKey: "root") as! Feed
                 
                 feeds.append(feed)
             }
@@ -50,29 +50,29 @@ class FeedManager {
         
         // Read defaults from file
         do {
-            let content = try String(contentsOfFile: NSBundle.mainBundle().pathForResource("Defaults", ofType: "txt")!, encoding: NSUTF8StringEncoding)
-            let lines = content.componentsSeparatedByString("\n")
+            let content = try String(contentsOfFile: Bundle.main.path(forResource: "Defaults", ofType: "txt")!, encoding: String.Encoding.utf8)
+            let lines = content.components(separatedBy: "\n")
             for line in lines {
-                let lineSplit = line.componentsSeparatedByString(";")
+                let lineSplit = line.components(separatedBy: ";")
                 let title = lineSplit[0]
                 let URL = lineSplit[1]
                 
-                let thisFeed = Feed(title: title, URL: NSURL(string: URL)!, isOn: false, isStandard: true)
+                let thisFeed = Feed(title: title, URL: Foundation.URL(string: URL)!, isOn: false, isStandard: true)
                 defaultArray.append(thisFeed)
             }
         }
         catch _ {
         }
         
-        feeds.insertContentsOf(defaultArray, at: 0)
+        feeds.insert(contentsOf: defaultArray, at: 0)
         saveAll()
     }
     
     // Loads the default feeds
-    func loadDefaults(defaults: Array<NSData>) {
+    func loadDefaults(_ defaults: Array<Data>) {
         for data in defaults {
-            let unarc = NSKeyedUnarchiver(forReadingWithData: data)
-            let feed = unarc.decodeObjectForKey("root") as! Feed
+            let unarc = NSKeyedUnarchiver(forReadingWith: data)
+            let feed = unarc.decodeObject(forKey: "root") as! Feed
             
             feeds.append(feed)
         }
@@ -92,12 +92,12 @@ class FeedManager {
     
     // Saves default and users feeds
     func saveAll() {
-        var defaults:Array<NSData> = Array()
-        var userCreated:Array<NSData> = Array()
+        var defaults:Array<Data> = Array()
+        var userCreated:Array<Data> = Array()
         
         // Add feeds to array
         for feed in feeds {
-            let feedData = NSKeyedArchiver.archivedDataWithRootObject(feed)
+            let feedData = NSKeyedArchiver.archivedData(withRootObject: feed)
             
             if feed.isFeedStandard! {
                 defaults.append(feedData)
@@ -108,7 +108,7 @@ class FeedManager {
         }
         
         // Save!
-        let defs = NSUserDefaults.standardUserDefaults()
+        let defs = UserDefaults.standard
         defs.setValue(defaults, forKey: "Default")
         defs.setValue(userCreated, forKey: "User")
         defs.synchronize()
@@ -117,7 +117,7 @@ class FeedManager {
     
     //MARK: Modifying / adding / deleting feeds
     // Removes feed
-    func removeFeed(feedToRemove: Feed) {
+    func removeFeed(_ feedToRemove: Feed) {
         var removeIndex = -1
         for index in 0 ... feeds.count {
             if feeds[index] == feedToRemove {
@@ -127,12 +127,12 @@ class FeedManager {
         }
         
         if removeIndex != -1 {
-            feeds.removeAtIndex(removeIndex)
+            feeds.remove(at: removeIndex)
             saveAll()
         }
     }
     
-    func addFeed(newFeed: Feed) {
+    func addFeed(_ newFeed: Feed) {
         feeds.append(newFeed)
         saveAll()
     }

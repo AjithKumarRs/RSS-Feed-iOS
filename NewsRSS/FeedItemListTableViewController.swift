@@ -12,7 +12,7 @@ import SafariServices
 class FeedItemListTableViewController: UITableViewController, SFSafariViewControllerDelegate {
     var feedToShow:Feed?
     var feedItems:Array<FeedItem>?
-    var detailFormatter:NSDateFormatter?
+    var detailFormatter:DateFormatter?
     
     var loadingView:UIView!
 
@@ -30,13 +30,13 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
         }
         
     
-        self.detailFormatter = NSDateFormatter()
+        self.detailFormatter = DateFormatter()
         self.detailFormatter?.dateFormat = "EEEE 'kl.' HH:mm" // Mandag kl. 13:37
         
         loadFeedItems()
     }
     
-    override func viewWillDisappear(animated: Bool) {
+    override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         
         self.loadingView.removeFromSuperview() // Cleanup!
@@ -52,10 +52,10 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
     func addLoadingView() {
         // Ugly hack from StackOverflow, but hey, it works!
         loadingView = UIView(frame: CGRect(x: 0, y: 0, width: self.view.frame.size.width, height: self.view.frame.size.height))
-        loadingView.backgroundColor = UIColor.whiteColor()
+        loadingView.backgroundColor = UIColor.white
         
-        let loadingIndicator = UIActivityIndicatorView(activityIndicatorStyle: .WhiteLarge)
-        loadingIndicator.color = UIColor.blackColor()
+        let loadingIndicator = UIActivityIndicatorView(activityIndicatorStyle: .whiteLarge)
+        loadingIndicator.color = UIColor.black
         
         loadingView.addSubview(loadingIndicator)
         loadingIndicator.center = CGPoint(x: loadingView.frame.size.width/2, y: loadingView.frame.size.height/2)
@@ -65,7 +65,7 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
     }
     
     // MARK: Feeds
-    @IBAction func refreshFeed(sender: AnyObject) {
+    @IBAction func refreshFeed(_ sender: AnyObject) {
         self.feedItems?.removeAll()
         loadFeedItems()
         
@@ -79,22 +79,23 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
     }
     
     func loadFeedItems() {
-        self.loadingView.hidden = false
-        self.view.bringSubviewToFront(self.loadingView)
+        self.loadingView.isHidden = false
+        self.view.bringSubview(toFront: self.loadingView)
         
         if self.feedToShow != nil { // Normal feed
             print("Loading normal feed")
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), { () -> Void in
+            
+            DispatchQueue.global(qos: .background).async(execute: { () -> Void in
                 self.feedToShow?.getFeedItems({ (items) -> Void in
                     self.feedItems = items
                     
-                    dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                    DispatchQueue.main.async(execute: { () -> Void in
                         self.tableView.reloadData()
-                        self.loadingView.hidden = true
+                        self.loadingView.isHidden = true
                     })
                     
                     }, onFailure: { (reason) -> Void in
-                        dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                        DispatchQueue.main.async(execute: { () -> Void in
                             self.showError()
                         })
                 })
@@ -112,12 +113,12 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
                 currentRunningDownloads += 1
                 print("Download started")
                 
-                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), { () -> Void in
+                DispatchQueue.global(qos: .background).async(execute: { () -> Void in
                     feed.getFeedItems({ (items) -> Void in
-                            dispatch_async(dispatch_get_main_queue(), {() -> Void in
+                            DispatchQueue.main.async(execute: {() -> Void in
                                 print("Download done")
                                 
-                                tempDownloadedItems.appendContentsOf(items)
+                                tempDownloadedItems.append(contentsOf: items)
                                 currentRunningDownloads -= 1
                                 
                                 if currentRunningDownloads == 0 {
@@ -126,7 +127,7 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
                             })
                         },
                         onFailure: { (reason) -> Void in
-                            dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                            DispatchQueue.main.async(execute: { () -> Void in
                                 self.showError()
                             })
                     })
@@ -139,27 +140,27 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
         }
     }
     
-    func completedLoad(downloadedItems: Array<FeedItem>) {
+    func completedLoad(_ downloadedItems: Array<FeedItem>) {
         // Sort and load!
-        let sortedItems = downloadedItems.sort({ $0.pubDate!.compare($1.pubDate!) == NSComparisonResult.OrderedAscending })
-        self.feedItems = sortedItems.reverse()
+        let sortedItems = downloadedItems.sorted(by: { $0.pubDate!.compare($1.pubDate! as Date) == ComparisonResult.orderedAscending })
+        self.feedItems = sortedItems.reversed()
         
-        self.loadingView.hidden = true
+        self.loadingView.isHidden = true
         self.tableView.reloadData()
     }
 
     // MARK: - Table view data source
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let feedItem = self.feedItems![indexPath.row]
         
-        let vc = SFSafariViewController(URL: NSURL(string: feedItem.link!)!)
+        let vc = SFSafariViewController(url: URL(string: feedItem.link!)!)
         vc.delegate = self
-        presentViewController(vc, animated: true) { () -> Void in }
+        present(vc, animated: true) { () -> Void in }
         
-        tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    override func numberOfSections(in tableView: UITableView) -> Int {
         if self.feedItems != nil {
             return 1
         }
@@ -167,7 +168,7 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
         return 0
     }
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if self.feedItems != nil {
             return self.feedItems!.count
         }
@@ -175,13 +176,13 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
         return 0
     }
 
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath)
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         let feedItem = self.feedItems?[indexPath.row]
         cell.textLabel?.text = feedItem?.title
-        cell.accessoryType = .DisclosureIndicator
+        cell.accessoryType = .disclosureIndicator
         
-        var detailText = self.detailFormatter?.stringFromDate((feedItem?.pubDate)!)
+        var detailText = self.detailFormatter?.string(from: (feedItem?.pubDate)! as Date)
         
         if self.feedToShow == nil { // If in 'My sites', show item website
             detailText! += " - " + (feedItem?.ownerFeed)!
@@ -193,18 +194,18 @@ class FeedItemListTableViewController: UITableViewController, SFSafariViewContro
     
     
     // MARK: SFSafariWebViewDelegate
-    func safariViewController(_controller: SFSafariViewController,
+    func safariViewController(_ _controller: SFSafariViewController,
         didCompleteInitialLoad didLoadSuccessfully: Bool) {
-        UIApplication.sharedApplication().setStatusBarStyle(.Default, animated: true)
+        UIApplication.shared.setStatusBarStyle(.default, animated: true)
     }
     
-    func safariViewControllerDidFinish(_controller: SFSafariViewController) {
-        UIApplication.sharedApplication().setStatusBarStyle(.LightContent, animated: true)
+    func safariViewControllerDidFinish(_ _controller: SFSafariViewController) {
+        UIApplication.shared.setStatusBarStyle(.lightContent, animated: true)
     }
     
     // MARK: - Navigation
 
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
     }
 
 }
